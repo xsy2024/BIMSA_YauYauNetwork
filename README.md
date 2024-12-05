@@ -1,6 +1,7 @@
 ## Table of Contents
 - [Introduction](#introduction)
 - [Usage](#usage)
+- [Example](#example)
 
   ## Introduction
 
