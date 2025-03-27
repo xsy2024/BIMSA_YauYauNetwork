@@ -13,30 +13,43 @@ class yauyauSDE:
     
     
     def __init__(self, name, data):
+        """
+        Initialize the yauyauSDE object with dataset and names.
+        
+        Parameters:
+            name: list or other iterable containing names for the datasets.
+            data: dictionary or similar structure containing the data.
+        """
        
-        self.Total_name = name
-        self.Total_data = data
-        self.Total_weight = dict()
-        self.Total_weight_ = dict()
-        self.static_w = dict()
-        self.intercept_self_ = dict()
-        self.coef_ = dict()
-        self.intercept_ = dict()
-        self.R2 = dict()
-        self.gene = dict()
-        self.gene_self = dict()
-        self.mse = dict()
-        self.W = dict()
-        self.W_p = dict()
+        self.Total_name = name           # List of dataset names
+        self.Total_data = data           # Dictionary containing the data for each name
+        self.Total_weight = dict()       # Dictionary to store calculated weights
+        self.Total_weight_ = dict()      # Additional weight storage
+        self.static_w = dict()           # Dictionary for static weight (accumulated weights)
+        self.intercept_self_ = dict()    # Dictionary for storing self intercepts
+        self.coef_ = dict()              # Dictionary for regression coefficients
+        self.intercept_ = dict()         # Dictionary for regression intercepts
+        self.R2 = dict()                 # Dictionary to store R^2 scores for regressions
+        self.gene = dict()               # Dictionary to store predicted gene values
+        self.gene_self = dict()          # Dictionary for self gene predictions
+        self.mse = dict()                # Dictionary for storing mean squared errors
+        self.W = dict()                  # Dictionary for weight matrices computed by different methods
+        self.W_p = dict()                # Dictionary for predicted weights
         
     
         
         
     def LegendrePolynomials(self,N,x):
+       """
+        Compute the Legendre polynomial of order N evaluated at x.
+        
+        Parameters:
+            N: int, the order of the Legendre polynomial.
+            x: numeric or symbolic variable at which the polynomial is evaluated.
+        
+        Returns:
+            The value of the Legendre polynomial of degree N at x.
         """
-        N 为勒让德多项式的阶数
-        x 为自变量 sym.symbol对象
-            """
         if N == 0:
             return 1
         if N == 1:
@@ -51,12 +64,24 @@ class yauyauSDE:
         return p1   
     
     def sub(self):
-        
+        """
+        Preprocess the Total_data for each dataset name by subtracting the value at time 0
+        and selecting the first 17 columns.
+        """
         for j in self.Total_name:
+            # Subtract the first row (at time 0) from each row along axis 0
             self.Total_data[j] = self.Total_data[j].sub(self.Total_data[j][0.0], axis=0)
             self.Total_data[j] = self.Total_data[j].iloc[:,:17]
   
-    def L_conti(self, no,step):        
+    def L_conti(self, no,step): 
+        """
+        Fit a polynomial (up to 4th degree) to the data for a given sample and generate
+        new predictions with a given step size.
+        
+        Parameters:
+            no: index of the sample in the data.
+            step: float, step size for new time grid.
+        """
         t = np.arange(0., 4.0001, 0.25)
         t_2 = t**2
         t_3 = t**3
@@ -76,7 +101,10 @@ class yauyauSDE:
         self.gene[no] = gene
         
     def h(self):
-       
+        """
+        Compute mean values and additional features from the Total_data,
+        fit a regression model and calculate weights.
+        """
         X_0 = np.array([self.Total_data[j].mean(0) for j in self.Total_name])
        
         X_1 = np.array([self.Total_data[j].mean(0)**2 for j in self.Total_name])
@@ -126,6 +154,14 @@ class yauyauSDE:
         np.savetxt("Total_data.csv",X_0,delimiter=",")
     
     def w_individual(self,state,name,no):
+        """
+        Compute individual weight matrices based on the provided state.
+        
+        Parameters:
+            state: np.array, the state variable vector.
+            name: str, the key under which to store computed weights.
+            no: sample index.
+        """
         X = np.concatenate((state,state**2,np.cos(state)),axis = 1)
         #X = np.concatenate((self.LegendrePolynomials(1,state),self.LegendrePolynomials(2,state),self.LegendrePolynomials(3,state)),axis = 1)
         length = state.shape[0]
@@ -150,6 +186,13 @@ class yauyauSDE:
         self.static_w[name] = np.sum(w_s,axis=2)*step
         
     def w_deter(self,name,no):
+        """
+        Determine weight matrices using a deterministic approach based on gene predictions.
+        
+        Parameters:
+            name: str, key for storing weight matrices.
+            no: sample index.
+        """
         #state = np.array([self.Total_data[j].iloc[no,:17] for j in self.Total_name]).T
         state = np.vstack(self.gene[no]).T
         print(state.shape)
@@ -178,6 +221,13 @@ class yauyauSDE:
         self.static_w[name] = np.sum(w_s,axis=0)*step
         
     def w(self,state,name):
+        """
+        Compute weight matrices using mean regression coefficients.
+        
+        Parameters:
+            state: np.array, state variable.
+            name: str, key for storing computed weights.
+        """
         X = np.concatenate((state,state**2,np.cos(state)),axis = 1)
         length = state.shape[0]
         w_s = np.zeros((length,3,3))
@@ -199,6 +249,14 @@ class yauyauSDE:
         self.static_w_ = np.sum(w_s,axis=0)*step
     
     def w_new(self, state, no, name):
+        """
+        Compute new weight matrices using gene predictions and adjust for noise.
+        
+        Parameters:
+            state: np.array, the original state variable.
+            no: sample index.
+            name: str, key for storing computed weights.
+        """
         state_ = np.vstack(self.gene[no]).T
         X = np.concatenate((state,state**2,state**3),axis = 1)
         X_ = np.concatenate((state_,state_**2,state_**3),axis = 1)
@@ -235,6 +293,12 @@ class yauyauSDE:
         #self.static_w_ = np.sum(w_s,axis=0)*step
     
     def H(self, no):
+        """
+        Fit a regression model for the sample with index 'no' using various feature transformations.
+        
+        Parameters:
+            no: sample index.
+        """
         X_0 = np.array([self.Total_data[j].iloc[no,:] for j in self.Total_name])
         X_1 = np.array([self.Total_data[j].iloc[no,:]**2 for j in self.Total_name])
         X_2 = np.array([self.Total_data[j].iloc[no,:]**3 for j in self.Total_name])
@@ -272,6 +336,12 @@ class yauyauSDE:
         self.R2[no] = R2
         
     def H_self(self, no):
+        """
+        Similar to H(), but uses 'self' variant for internal gene predictions.
+        
+        Parameters:
+            no: sample index.
+        """
         X_0 = np.array([self.Total_data[j].iloc[no,:] for j in self.Total_name])
         X_1 = np.array([self.Total_data[j].iloc[no,:]**2 for j in self.Total_name])
         X_2 = np.array([self.Total_data[j].iloc[no,:]**3 for j in self.Total_name])
@@ -390,6 +460,17 @@ class yauyauSDE:
         np.savetxt(f"{no}_total.csv",Total,delimiter = ",")
         
     def ode(self, y, t, p):
+        """
+        ODE function used in integration.
+        
+        Parameters:
+            y: current value of dependent variable.
+            t: time variable.
+            p: parameter vector [a1, a2, a3].
+        
+        Returns:
+            dydt: derivative computed as a1*y + a2*y^2 + a3*y^3.
+        """
         a1 ,a2, a3 = p
         dydt = a1*y+a2*y**2 +a3*y**3
         
@@ -398,6 +479,19 @@ class yauyauSDE:
         return dydt
     
     def odeerror(self, p, y0, t_span, t_eval, y_obs):
+        """
+        Compute error between ODE solution and observed data.
+        
+        Parameters:
+            p: parameter vector for ODE.
+            y0: initial condition.
+            t_span: tuple (t0, tf).
+            t_eval: time points where solution is evaluated.
+            y_obs: observed data.
+        
+        Returns:
+            error: sum of squared differences between solution and observed data.
+        """
         solve = solve_ivp(self.ode,  t_span, y0, "RK45",t_eval, args=(p,))
         y_hat = solve.y[0][0:-1:100]
         error = np.sum((y_hat-y_obs)**2)
@@ -405,13 +499,41 @@ class yauyauSDE:
         
         
     def f(self, x, no):
+        """
+        Compute the polynomial function based on stored coefficients and intercept for sample no.
+        
+        Parameters:
+            x: input feature vector.
+            no: sample index.
+        
+        Returns:
+            The computed value of the polynomial function.
+        """
         print(x**2)
         return np.array(self.intercept_[no])+ np.dot(np.array(self.coef_[no])[:,:3],x) + np.dot(np.array(self.coef_[no])[:,3:6],x**2) +np.dot(np.array(self.coef_[no])[:,6:9],x**3)
     
     def f_mean(self, x):
+        """
+        Compute the mean polynomial function using mean coefficients and intercept.
+        
+        Parameters:
+            x: input feature vector.
+        
+        Returns:
+            Computed function value.
+        """
         return np.array(self.intercept)+ np.dot(np.array(self.coef)[:,:3],x) + np.dot(np.array(self.coef)[:,3:6],x**2) + np.dot(np.array(self.coef)[:,6:],np.cos(x))
     
     def Euler_gene(self, t, dt, no, x_0 = 0):
+        """
+        Solve an ODE using Euler's method to predict gene expression.
+        
+        Parameters:
+            t: total time.
+            dt: time step.
+            no: sample index.
+            x_0: initial condition (default=0).
+        """
         step = int(t/dt)
         x = np.zeros((3,step+1))
         for j in range(step):
@@ -432,6 +554,14 @@ class yauyauSDE:
         np.savetxt(f'{no}_data.csv',np.array([self.Total_data[self.Total_name[i]].iloc[no,:17] for i in range(3)]),delimiter = "," )
     
     def Euler_gene_mean(self, t, dt, x_0 = 0):
+        """
+        Compute mean gene predictions using Euler's method with mean regression function.
+        
+        Parameters:
+            t: total time.
+            dt: time step.
+            x_0: initial condition (default=0).
+        """
         step = int(t/dt)
         x = np.zeros((3,step+1))
         for j in range(step):
