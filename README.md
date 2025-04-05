@@ -73,6 +73,6 @@ yysde.w_individual(state=estimate, name , no)
 ```
 For more, you can choose to use `draw_graph` and `draw_static_graph` to draw dynamic networks Video.
 
-##Example
+## Example
 `main.py` gives an example on #64 microbe.
 
