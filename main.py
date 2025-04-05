@@ -1,4 +1,5 @@
 import yauyauSDE 
+from Yau-Yau network import draw_graph
 import os
 import glob
 import numpy as np
@@ -64,7 +65,7 @@ def main():
       
     yysdes = yauyauSDE(csv_files[:3],L_data)
     yysdes.sub()
-    
+    yysdes.h()
     yysdes.L_conti(63, step = 0.25)
     yysdes.H_self(63)
     
@@ -91,7 +92,7 @@ def main():
 
 if __name__ == "__main__":
   
-  main()
+        main()
   
     
   
