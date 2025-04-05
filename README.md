@@ -4,7 +4,7 @@
 - [Example](#example)
 
   ## Introduction
-Yau-Yau filtering algorithm is designed to solve the problem of a filtering system of the form:
+Yau-Yau filtering algorithm is designed to solve the problem of a filtering system of the form$a$:
 
 
 '''math
