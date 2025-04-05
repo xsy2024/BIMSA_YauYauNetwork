@@ -11,7 +11,7 @@ $$\left\{ \begin{array}{cc}
 dX_t &= f(X_t)dt + \sigma_XdW_t\\
 dY_t &= h(X_t)dt + dV_t
 \end{array}
-\right.$$
+.\right$$
 
   ## Usage
 How to apply Yau-Yau network to data analysis?
