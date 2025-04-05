@@ -46,8 +46,33 @@ $$
 where $\Phi(X_ t)$ is a functions' libarary of $X_t$, $h_i(X_{i;t})$ are polynomial functions of the $i _ {th}$ term of $X_t$, and the first stochastic differential equation characterizes the population in terms of population mean and variance, the second stochastic differential equation calibrates the specifics of an individual in a population using specific individual observations $Y_t$, each $h_i(X_{i;t})$ captures the strength of the influence of the individual's $i _ {th}$ characteristic on other characteristics.
 
 The yauyauSDE class is mainly implemented to determine the form of equations from data.
-After we create an instance of yauyauSDE, then
+After we create an instance of yauyauSDE,
+```
+yysde = yauyauSDE(name, data)
+```
+then we can determine the form of the first differential equation with the following line of code:
 
 ```
-yauyauSDE.h()
+yysde.h()
 ```
+The second diffrential equation can be obtained from the following code:
+
+```
+yysde.H_self(no)
+```
+We can invert the determined equations with this line of code and can visualize the computation:
+```
+yysde.Euler_gene(time, step, no)
+```
+At this point we have transformed the problem into a filtering problem, using the file `Yau-Yau filter algorithm` can real state what we really want.
+
+After obtaining the true state, we use the weight coefficients previously calculated to obtain the network graph based on the true state:
+
+```
+yysde.w_individual(state=estimate, name , no)
+```
+For more, you can choose to use `draw_graph` and `draw_static_graph` to draw dynamic networks Video.
+
+##Example
+`main.py` gives an example on #64 microbe.
+
